@@ -22,10 +22,20 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class Webpage extends StatelessWidget{
+class Webpage extends StatefulWidget{
+  @override
+  State<Webpage> createState() => _WebpageState();
+}
+
+class _WebpageState extends State<Webpage> {
+
+  bool isLoading=true;
+  final _key = UniqueKey();
   late WebViewController _controll;
 
+
   GlobalKey<ScaffoldState>_globalKey=GlobalKey<ScaffoldState>();
+
   @override
   Widget build(BuildContext context) {
 
@@ -34,37 +44,40 @@ class Webpage extends StatelessWidget{
       child: Scaffold(
         key: _globalKey,
         appBar: EmptyAppBar(),
-        body: WebView(
-          initialUrl: 'https://www.tufidcoschemes.co.in/admin',
-          javascriptMode: JavascriptMode.unrestricted,
-          onWebViewCreated: ( webViewController) {
-            _controll=webViewController;
-          },
-
-          onProgress: (int progress) {
-
-            print("WebView is loading (progress : $progress%)");
-          },
-          javascriptChannels: <JavascriptChannel>{
-            _toasterJavascriptChannel(context),
-          },
-          navigationDelegate: (NavigationRequest request) {
-            print('allowing navigation to $request');
-            return NavigationDecision.navigate;
-          },
-          onPageStarted: (String url) {
-            print('Page started loading: $url');
-          },
-          onPageFinished: (String url) {
-            print('Page finished loading: $url');
-          },
-          gestureNavigationEnabled: true,
+        body: Stack(
+          children: <Widget>[
+            WebView(
+              key: _key,
+              initialUrl: "https://www.tufidcoschemes.co.in/admin",
+              javascriptMode: JavascriptMode.unrestricted,
+              onWebViewCreated: ( webViewController) {
+                _controll=webViewController;
+              },
+              javascriptChannels: <JavascriptChannel>{
+                _toasterJavascriptChannel(context),
+              },
+              navigationDelegate: (NavigationRequest request) {
+                print('allowing navigation to $request');
+                return NavigationDecision.navigate;
+              },
+              onPageFinished: (finish) {
+                setState(() {
+                  isLoading = false;
+                });
+              },
+              gestureNavigationEnabled: true,
+            ),
+            isLoading ? Center( child: CircularProgressIndicator(),)
+                : Stack(),
+          ],
         ),
       ),
+
     );
 
 
   }
+
   JavascriptChannel _toasterJavascriptChannel(BuildContext context) {
     return JavascriptChannel(
         name: 'Toaster',
@@ -97,31 +110,31 @@ class Webpage extends StatelessWidget{
           builder: (context) => Consumer<BackEventNotifier>(
               builder: (context, event, child) {
                 _notifier=event;
-                return new AlertDialog(
+                return AlertDialog(
 
-                  title: new Text(
+                  title: const Text(
                       'Confirmation ', style: TextStyle(color: Colors.purple)),
 
-                  content: new Text('Do you want exit app ?'),
+                  content: const Text('Do you want exit app ?'),
 
                   actions: <Widget>[
 
-                    new TextButton(
+                    TextButton(
 
                       onPressed: () {
                         Navigator.of(context).pop(false);
                         event.add(false);
                       },
 
-                      child: new Text("No"), // No
+                      child: Text("No"), // No
 
                     ),
-                    new TextButton(
+                    TextButton(
                       onPressed: () {
                         Navigator.of(context).pop();
                         event.add(true);
                       },
-                      child: new Text("Yes"), // Yes
+                      child: Text("Yes"), // Yes
                     ),
                   ],
                 );
@@ -137,7 +150,6 @@ class Webpage extends StatelessWidget{
       return _notifier.isBack;
     }
   }
-
 }
 class EmptyAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
